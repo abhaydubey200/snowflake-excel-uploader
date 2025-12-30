@@ -1,64 +1,49 @@
 import streamlit as st
-import pandas as pd  
-import sqlalchemy
-from sqlalchemy.engine import create_engine
+import pandas as pd
+from sqlalchemy import create_engine, text
 
-
-# ------------------ Streamlit Config ------------------
-st.set_page_config(
-    page_title="Excel to Snowflake Uploader",
-    layout="wide"
-)
-
-st.title("📤 Excel to Snowflake Uploader")
-
-# ------------------ Snowflake Secrets ------------------
-SNOWFLAKE_USER = st.secrets["SNOWFLAKE_USER"]
-SNOWFLAKE_PASSWORD = st.secrets["SNOWFLAKE_PASSWORD"]
-SNOWFLAKE_ACCOUNT = st.secrets["SNOWFLAKE_ACCOUNT"]
-SNOWFLAKE_WAREHOUSE = st.secrets["SNOWFLAKE_WAREHOUSE"]
-SNOWFLAKE_DATABASE = st.secrets["SNOWFLAKE_DATABASE"]
-SNOWFLAKE_SCHEMA = st.secrets["SNOWFLAKE_SCHEMA"]
+# ---------------- SNOWFLAKE CONFIG ----------------
+SNOWFLAKE_USER = "ABHAY2004"
+SNOWFLAKE_PASSWORD = "Abhay@12345"   # change later
+SNOWFLAKE_ACCOUNT = "VKOZIAJ-KC24613"
+SNOWFLAKE_WAREHOUSE = "COMPANY_WH"
+SNOWFLAKE_DATABASE = "BIZOM_DB"
+SNOWFLAKE_SCHEMA = "OUTLET_SCHEMA"
 TABLE_NAME = "OUTLET_MASTER"
 
-# ------------------ Snowflake Engine ------------------
-engine = create_engine(
-    f"snowflake://{SNOWFLAKE_USER}:{SNOWFLAKE_PASSWORD}@{SNOWFLAKE_ACCOUNT}/"
-    f"{SNOWFLAKE_DATABASE}/{SNOWFLAKE_SCHEMA}"
-    f"?warehouse={SNOWFLAKE_WAREHOUSE}"
-)
+# ---------------- STREAMLIT UI ----------------
+st.set_page_config(page_title="Excel → Snowflake Uploader", layout="wide")
+st.title("📤 Excel to Snowflake Data Uploader")
 
-# ------------------ File Upload ------------------
-uploaded_file = st.file_uploader(
-    "Upload Excel File",
-    type=["xlsx"]
-)
+uploaded_file = st.file_uploader("Upload Excel file", type=["xlsx"])
 
 if uploaded_file:
     try:
         df = pd.read_excel(uploaded_file)
-
-        st.subheader("🔍 Preview Data")
+        st.success("Excel loaded successfully")
         st.dataframe(df.head())
 
-        # Deduplicate
-        if "Stockist_Id" in df.columns:
-            df = df.drop_duplicates(subset=["Stockist_Id"])
-
-        # Handle NULLs
-        df = df.where(pd.notnull(df), None)
-
-        with engine.begin() as conn:
-            df.to_sql(
-                TABLE_NAME,
-                con=conn,
-                if_exists="append",
-                index=False,
-                method="multi"
+        if st.button("Upload to Snowflake"):
+            engine = create_engine(
+                f"snowflake://{SNOWFLAKE_USER}:{SNOWFLAKE_PASSWORD}"
+                f"@{SNOWFLAKE_ACCOUNT}/{SNOWFLAKE_DATABASE}/{SNOWFLAKE_SCHEMA}"
+                f"?warehouse={SNOWFLAKE_WAREHOUSE}"
             )
 
-        st.success(f"✅ {len(df)} rows uploaded successfully")
+            # Replace NaN with None
+            df = df.where(pd.notnull(df), None)
+
+            # Upload
+            df.to_sql(
+                TABLE_NAME,
+                engine,
+                if_exists="append",
+                index=False,
+                method="multi",
+                chunksize=1000
+            )
+
+            st.success(f"✅ {len(df)} records uploaded successfully!")
 
     except Exception as e:
         st.error(f"❌ Error: {e}")
-
