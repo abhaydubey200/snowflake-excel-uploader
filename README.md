@@ -1,15 +1,21 @@
-# Excel to Snowflake Uploader
+# Snowflake Excel Uploader 🚀
 
-This Streamlit app uploads Excel files directly into a Snowflake table.
+Production-ready Streamlit application to upload Excel data into Snowflake.
 
 ## Features
-- Excel upload
-- Bulk insert
-- Snowflake integration
-- Secure credentials via Streamlit Secrets
+- Auto column normalization
+- COPY INTO (fast & scalable)
+- Handles nulls & invalid rows
+- Snowflake best practices
+- Streamlit Cloud deployable
 
-## How to Run Locally
+## Tech Stack
+- Python
+- Streamlit
+- Snowflake
+- Pandas
 
+## Run Locally
 ```bash
 pip install -r requirements.txt
 streamlit run app.py
