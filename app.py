@@ -1,19 +1,26 @@
 import streamlit as st
 import pandas as pd
 from sqlalchemy import create_engine, text
+from urllib.parse import quote_plus
 
-SNOWFLAKE_USER = "ABHAY2004"
-SNOWFLAKE_PASSWORD = "Abhay@7505991639"   
-SNOWFLAKE_ACCOUNT = "VKOZIAJ-KC24613"
-SNOWFLAKE_WAREHOUSE = "COMPANY_WH"
-SNOWFLAKE_DATABASE = "BIZOM_DB"
-SNOWFLAKE_SCHEMA = "OUTLET_SCHEMA"
+st.set_page_config(page_title="Excel to Snowflake Uploader", layout="wide")
+st.title(" Excel → Snowflake Uploader")
+
+SNOWFLAKE_USER = st.secrets["SNOWFLAKE_USER"]
+SNOWFLAKE_PASSWORD = quote_plus(st.secrets["SNOWFLAKE_PASSWORD"])
+SNOWFLAKE_ACCOUNT = st.secrets["SNOWFLAKE_ACCOUNT"]
+SNOWFLAKE_WAREHOUSE = st.secrets["SNOWFLAKE_WAREHOUSE"]
+SNOWFLAKE_DATABASE = st.secrets["SNOWFLAKE_DATABASE"]
+SNOWFLAKE_SCHEMA = st.secrets["SNOWFLAKE_SCHEMA"]
 TABLE_NAME = "OUTLET_MASTER"
 
-st.set_page_config(page_title="Excel → Snowflake Uploader", layout="wide")
-st.title(" Excel to Snowflake Data Uploader")
+engine = create_engine(
+    f"snowflake://{SNOWFLAKE_USER}:{SNOWFLAKE_PASSWORD}"
+    f"@{SNOWFLAKE_ACCOUNT}/{SNOWFLAKE_DATABASE}/{SNOWFLAKE_SCHEMA}"
+    f"?warehouse={SNOWFLAKE_WAREHOUSE}"
+)
 
-uploaded_file = st.file_uploader("Upload Excel file", type=["xlsx"])
+uploaded_file = st.file_uploader("Upload Excel File", type=["xlsx"])
 
 if uploaded_file:
     try:
@@ -22,16 +29,8 @@ if uploaded_file:
         st.dataframe(df.head())
 
         if st.button("Upload to Snowflake"):
-            engine = create_engine(
-                f"snowflake://{SNOWFLAKE_USER}:{SNOWFLAKE_PASSWORD}"
-                f"@{SNOWFLAKE_ACCOUNT}/{SNOWFLAKE_DATABASE}/{SNOWFLAKE_SCHEMA}"
-                f"?warehouse={SNOWFLAKE_WAREHOUSE}"
-            )
-
-            # Replace NaN with None
             df = df.where(pd.notnull(df), None)
 
-            # Upload
             df.to_sql(
                 TABLE_NAME,
                 engine,
@@ -41,8 +40,7 @@ if uploaded_file:
                 chunksize=1000
             )
 
-            st.success(f"✅ {len(df)} records uploaded successfully!")
+            st.success(f" {len(df)} rows uploaded successfully")
 
     except Exception as e:
-        st.error(f"❌ Error: {e}")
-
+        st.error(f" Error: {e}")
