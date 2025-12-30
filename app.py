@@ -5,7 +5,7 @@ from data_utils import clean_dataframe
 
 st.set_page_config(page_title="Snowflake Excel Uploader", layout="wide")
 
-st.title(" Excel to Snowflake Uploader (Production Ready)")
+st.title(" Excel to Snowflake Uploader")
 
 uploaded_file = st.file_uploader("Upload Excel File", type=["xlsx"])
 
@@ -47,3 +47,4 @@ if uploaded_file and st.button("Upload to Snowflake"):
 
     except Exception as e:
         st.error(f" Error: {e}")
+
