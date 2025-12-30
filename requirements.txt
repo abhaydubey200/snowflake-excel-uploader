@@ -1,7 +1,6 @@
 streamlit
 pandas
-openpyxl
-sqlalchemy==1.4.54
 snowflake-connector-python
 snowflake-sqlalchemy
-
+sqlalchemy
+openpyxl
