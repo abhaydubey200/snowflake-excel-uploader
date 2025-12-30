@@ -2,18 +2,16 @@ import streamlit as st
 import pandas as pd
 from sqlalchemy import create_engine, text
 
-# ---------------- SNOWFLAKE CONFIG ----------------
 SNOWFLAKE_USER = "ABHAY2004"
-SNOWFLAKE_PASSWORD = "Abhay@12345"   # change later
+SNOWFLAKE_PASSWORD = "Abhay@7505991639"   
 SNOWFLAKE_ACCOUNT = "VKOZIAJ-KC24613"
 SNOWFLAKE_WAREHOUSE = "COMPANY_WH"
 SNOWFLAKE_DATABASE = "BIZOM_DB"
 SNOWFLAKE_SCHEMA = "OUTLET_SCHEMA"
 TABLE_NAME = "OUTLET_MASTER"
 
-# ---------------- STREAMLIT UI ----------------
 st.set_page_config(page_title="Excel → Snowflake Uploader", layout="wide")
-st.title("📤 Excel to Snowflake Data Uploader")
+st.title(" Excel to Snowflake Data Uploader")
 
 uploaded_file = st.file_uploader("Upload Excel file", type=["xlsx"])
 
@@ -47,3 +45,4 @@ if uploaded_file:
 
     except Exception as e:
         st.error(f"❌ Error: {e}")
+
