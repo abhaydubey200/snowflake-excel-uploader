@@ -1,46 +1,49 @@
 import streamlit as st
 import pandas as pd
-from sqlalchemy import create_engine, text
-from urllib.parse import quote_plus
+from snowflake_client import get_snowflake_connection
+from data_utils import clean_dataframe
 
-st.set_page_config(page_title="Excel to Snowflake Uploader", layout="wide")
-st.title(" Excel → Snowflake Uploader")
+st.set_page_config(page_title="Snowflake Excel Uploader", layout="wide")
 
-SNOWFLAKE_USER = st.secrets["SNOWFLAKE_USER"]
-SNOWFLAKE_PASSWORD = quote_plus(st.secrets["SNOWFLAKE_PASSWORD"])
-SNOWFLAKE_ACCOUNT = st.secrets["SNOWFLAKE_ACCOUNT"]
-SNOWFLAKE_WAREHOUSE = st.secrets["SNOWFLAKE_WAREHOUSE"]
-SNOWFLAKE_DATABASE = st.secrets["SNOWFLAKE_DATABASE"]
-SNOWFLAKE_SCHEMA = st.secrets["SNOWFLAKE_SCHEMA"]
-TABLE_NAME = "OUTLET_MASTER"
-
-engine = create_engine(
-    f"snowflake://{SNOWFLAKE_USER}:{SNOWFLAKE_PASSWORD}"
-    f"@{SNOWFLAKE_ACCOUNT}/{SNOWFLAKE_DATABASE}/{SNOWFLAKE_SCHEMA}"
-    f"?warehouse={SNOWFLAKE_WAREHOUSE}"
-)
+st.title(" Excel to Snowflake Uploader (Production Ready)")
 
 uploaded_file = st.file_uploader("Upload Excel File", type=["xlsx"])
 
-if uploaded_file:
+table_name = st.text_input("Target Snowflake Table", value="OUTLET_MASTER")
+
+if uploaded_file and st.button("Upload to Snowflake"):
     try:
         df = pd.read_excel(uploaded_file)
-        st.success("Excel loaded successfully")
-        st.dataframe(df.head())
+        df = clean_dataframe(df)
 
-        if st.button("Upload to Snowflake"):
-            df = df.where(pd.notnull(df), None)
+        conn = get_snowflake_connection()
+        cursor = conn.cursor()
 
-            df.to_sql(
-                TABLE_NAME,
-                engine,
-                if_exists="append",
-                index=False,
-                method="multi",
-                chunksize=1000
-            )
+        # Create TEMP stage
+        cursor.execute("CREATE OR REPLACE TEMP STAGE excel_stage")
 
-            st.success(f" {len(df)} rows uploaded successfully")
+        # Save CSV
+        csv_path = "/tmp/upload.csv"
+        df.to_csv(csv_path, index=False)
+
+        # Upload to stage
+        cursor.execute(f"PUT file://{csv_path} @excel_stage OVERWRITE = TRUE")
+
+        # COPY INTO 
+        copy_sql = f"""
+        COPY INTO {table_name}
+        FROM @excel_stage/upload.csv
+        FILE_FORMAT = (
+            TYPE = CSV
+            SKIP_HEADER = 1
+            FIELD_OPTIONALLY_ENCLOSED_BY = '"'
+        )
+        ON_ERROR = 'CONTINUE';
+        """
+
+        cursor.execute(copy_sql)
+
+        st.success(" Data successfully loaded into Snowflake")
 
     except Exception as e:
         st.error(f" Error: {e}")
