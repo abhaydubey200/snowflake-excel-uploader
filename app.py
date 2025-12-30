@@ -1,6 +1,8 @@
 import streamlit as st
-import pandas as pd
-from sqlalchemy import create_engine
+import pandas as pd  
+import sqlalchemy
+from sqlalchemy.engine import create_engine
+
 
 # ------------------ Streamlit Config ------------------
 st.set_page_config(
@@ -59,3 +61,4 @@ if uploaded_file:
 
     except Exception as e:
         st.error(f"❌ Error: {e}")
+
